@@ -90,3 +90,6 @@ if [ "${#MOUNTED_DIRS[@]}" -gt 0 ]; then
 else
     echo "No directories were successfully mounted."
 fi
+
+# backup home directory
+kopia snapshot create ~/
