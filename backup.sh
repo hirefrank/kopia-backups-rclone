@@ -2,9 +2,9 @@
 
 # setup two crons
 # 1. cron daily
-# 0 11 * * * /home/frank/Projects/kopia-backups-rclone-mounts/backup.sh.sh >> /home/frank/backup.sh.log 2>&1 &
+# 0 11 * * * /home/frank/Projects/kopia-backups-rclone-mounts/backup.sh.sh >> /home/frank/backup.log 2>&1 &
 # 2. cron weekly
-# 0 14 * * 1 rsync -a /home/frank/backup/cloud /home/frank/external/backup
+# 0 14 * * 1 rsync -a /home/frank/backup/cloud /home/frank/external/backup >> /home/frank/rsync.log 2>&1 &
 
 # todo
 # ngdrive, nphotos, ndropbox
