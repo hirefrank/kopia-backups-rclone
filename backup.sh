@@ -31,22 +31,6 @@ mount_rclone() {
     fi
 }
 
-# Function to unmount rclone directory
-unmount_rclone() {
-    local mount_point=$1
-    echo "Unmounting rclone directory $mount_point..."
-    if mountpoint -q "$mount_point"; then
-        fusermount -u "$mount_point"
-        if [ $? -eq 0 ]; then
-            echo "rclone directory $mount_point unmounted successfully."
-        else
-            echo "Failed to unmount rclone directory $mount_point."
-        fi
-    else
-        echo "rclone directory $mount_point is not mounted."
-    fi
-}
-
 # Loop through the rclone remotes and mount points
 for i in "${!RCLONE_REMOTES[@]}"; do
     rclone_remote="${RCLONE_REMOTES[$i]}"

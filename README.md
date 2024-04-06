@@ -12,7 +12,6 @@ This script is designed to mount [Rclone](https://rclone.org/) remote directorie
 2. The script defines three functions:
    - `is_mounted()`: Checks if a given mount point is already mounted.
    - `mount_rclone()`: Mounts an Rclone remote to a given mount point.
-   - `unmount_rclone()`: Unmounts an Rclone remote from a given mount point.
 3. The script loops through the `RCLONE_REMOTES` and `MOUNT_POINTS` arrays, checking if each mount point is already mounted. If not, it calls the `mount_rclone()` function to mount the corresponding Rclone remote.
 4. If any directories are successfully mounted, the script prints a list of the mounted directories.
 5. The script then performs a Kopia snapshot backup of the user's home directory.
