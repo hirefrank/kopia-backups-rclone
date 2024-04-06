@@ -41,12 +41,12 @@ This script is designed to mount [Rclone](https://rclone.org/) remote directorie
 
 Easily create a daily cron:
 ```
-0 11 * * * /home/frank/Projects/kopia-backups-rclone-mounts/backup.sh >> /home/frank/backup.log 2>&1 &
+0 11 * * * /home/frank/Projects/kopia-backups-rclone-mounts/backup.sh >> /home/frank/backup.log 2>&1
 ```
 
 Create a weekly cron to rsync the kopia repository to another drive/location:
 ```
-0 14 * * 1 rsync -a /home/frank/backup/cloud /home/frank/external/backup >> /home/frank/rsync.log 2>&1 &
+0 14 * * 1 rsync -a /home/frank/backup/cloud /home/frank/external/backup >> /home/frank/rsync.log 2>&1
 ```
 
 ## Todos
