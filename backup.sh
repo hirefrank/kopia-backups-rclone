@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# setup two crons
-# 1. cron daily
-# 0 11 * * * /home/frank/Projects/kopia-backups-rclone-mounts/backup.sh >> /home/frank/backup.log 2>&1 &
-# 2. cron weekly
-# 0 14 * * 1 rsync -a /home/frank/backup/cloud /home/frank/external/backup >> /home/frank/rsync.log 2>&1 &
-
-# todo
-# ngdrive, nphotos, ndropbox
-
 # Define arrays for rclone remotes and mount points
 declare -a RCLONE_REMOTES=("fcharris-gdrive" "fcharris-gphotos")
 declare -a MOUNT_POINTS=("/home/frank/gdrive" "/home/frank/gphotos")
@@ -91,5 +82,5 @@ else
     echo "No directories were successfully mounted."
 fi
 
-# backup home directory
+# Backup home directory
 kopia snapshot create ~/
