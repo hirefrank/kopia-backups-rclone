@@ -43,9 +43,9 @@ Easily create a daily cron:
 0 11 * * * /home/frank/Projects/kopia-backups-rclone/backup.sh >> /home/frank/backup.log 2>&1
 ```
 
-Create a weekly cron to rsync the kopia repository to another drive/location:
+Create a weekly cron to sync the kopia repository to another drive/location:
 ```
-0 14 * * 1 rsync -a /home/frank/backup/cloud /home/frank/external/backup >> /home/frank/rsync.log 2>&1
+0 14 * * 1 kopia repository sync-to filesystem --path /mnt/external/backup/ >> /home/frank/sync.log 2>&1
 ```
 
 ## Todos
