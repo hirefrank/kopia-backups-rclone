@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define arrays for rclone remotes and mount points
-declare -a RCLONE_REMOTES=("fcharris-gdrive" "fcharris-gphotos")
-declare -a MOUNT_POINTS=("/home/frank/gdrive" "/home/frank/gphotos")
+declare -a RCLONE_REMOTES=("fcharris-gdrive" "fcharris-gphotos", "fcharris-dropbox")
+declare -a MOUNT_POINTS=("/home/frank/gdrive" "/home/frank/gphotos", "/home/frank/dropbox")
 declare -a MOUNTED_DIRS=()  # Array to store successfully mounted directories
 
 # Function to check if rclone directory is mounted
