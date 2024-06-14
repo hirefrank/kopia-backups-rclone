@@ -25,13 +25,25 @@ mount_rclone() {
     local rclone_remote=$1
     local mount_point=$2
     echo "Mounting rclone directory $mount_point..."
-    rclone mount "$rclone_remote": "$mount_point" --allow-other --vfs-cache-mode writes --daemon &>/dev/null &
-    sleep 2  # Wait a bit for the mount to initialize
-    if is_mounted "$mount_point"; then
-        echo "rclone directory $mount_point mounted successfully."
-        MOUNTED_DIRS+=("$mount_point")
+    rclone mount "$rclone_remote": "$mount_point" \
+        --allow-other \
+        --vfs-cache-mode writes \
+        --vfs-cache-poll-interval 0 \
+        --volname "$rclone_remote" \
+        > "/tmp/rclone_mount_$rclone_remote.log" 2>&1 &
+    
+    local rclone_pid=$!
+    sleep 5  # Give it some time to mount
+
+    if kill -0 $rclone_pid 2>/dev/null; then
+        if grep -qs "$mount_point" /proc/mounts || ls "$mount_point" &>/dev/null; then
+            echo "rclone directory $mount_point mounted successfully."
+            MOUNTED_DIRS+=("$mount_point")
+        else
+            echo "Mount process is running for $mount_point, but the mount point doesn't seem to be working."
+        fi
     else
-        echo "Failed to mount rclone directory $mount_point."
+        echo "Failed to mount rclone directory $mount_point. Check /tmp/rclone_mount_$rclone_remote.log for errors."
     fi
 }
 
