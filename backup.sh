@@ -26,7 +26,6 @@ mount_rclone() {
     local mount_point=$2
     echo "Mounting rclone directory $mount_point..."
     rclone mount "$rclone_remote": "$mount_point" \
-        --allow-other \
         --vfs-cache-mode writes \
         --vfs-cache-poll-interval 0 \
         --volname "$rclone_remote" \
@@ -47,10 +46,11 @@ mount_rclone() {
     fi
 }
 
+# Function to unmount rclone directory
 unmount_rclone() {
     local mount_point=$1
     echo "Unmounting rclone directory $mount_point..."
-    fusermount -u "$mount_point"
+    fusermount -uz "$mount_point"
     if [ $? -eq 0 ]; then
         echo "rclone directory $mount_point unmounted successfully."
     else
@@ -69,24 +69,30 @@ for i in "${!RCLONE_REMOTES[@]}"; do
         mount_rclone "$rclone_remote" "$mount_point"
     else
         echo "Skipping mount for $mount_point as it's already mounted."
+        MOUNTED_DIRS+=("$mount_point")
     fi
 done
 
-# Iterate over the successfully mounted directories
+# Verify mounted directories
+echo "Successfully mounted directories:"
+for dir in "${MOUNTED_DIRS[@]}"; do
+    echo " - $dir"
+done
+
+# Create snapshots
 if [ "${#MOUNTED_DIRS[@]}" -gt 0 ]; then
-    echo "Successfully mounted directories:"
     for mounted_dir in "${MOUNTED_DIRS[@]}"; do
         if [[ "$mounted_dir" == *"-gphotos" ]]; then
-            dir_with_path="$mounted_dir:media/by-month"
-            echo "$dir_with_path"
-            # Perform any additional operations on the mounted directory with the appended path here
-            # For example:
-            kopia snapshot create "$dir_with_path"
+            dir_with_path="$mounted_dir/media/by-month"
         else
-            echo "$mounted_dir"
-            # Perform any additional operations on the mounted directory here
-            # For example:
-            kopia snapshot create "$mounted_dir/"
+            dir_with_path="$mounted_dir/"
+        fi
+        
+        echo "Creating snapshot for $dir_with_path..."
+        if ! kopia snapshot create "$dir_with_path"; then
+            echo "WARNING: Failed to create snapshot for $dir_with_path" >&2
+        else
+            echo "Snapshot created for $dir_with_path."
         fi
     done
 else
@@ -94,9 +100,18 @@ else
 fi
 
 # Backup home directory
-kopia snapshot create ~/
+echo "Creating snapshot of home directory..."
+if ! kopia snapshot create ~/; then
+    echo "WARNING: Failed to create snapshot of home directory." >&2
+else
+    echo "Snapshot of home directory created successfully."
+fi
 
 # Unmount all mounted directories
+echo "Unmounting directories..."
 for mounted_dir in "${MOUNTED_DIRS[@]}"; do
     unmount_rclone "$mounted_dir"
 done
+echo "All directories unmounted."
+
+echo "Backup process completed."
