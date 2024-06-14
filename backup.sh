@@ -8,8 +8,11 @@ declare -a MOUNTED_DIRS=()  # Array to store successfully mounted directories
 # Function to check if rclone directory is mounted
 is_mounted() {
     local mount_point=$1
-    if mountpoint -q "$mount_point"; then
+    if grep -qs "$mount_point" /proc/mounts; then
         echo "rclone directory $mount_point is already mounted."
+        return 0
+    elif pgrep -f "rclone.*$mount_point" > /dev/null; then
+        echo "rclone process for $mount_point is running, assuming it's mounted."
         return 0
     else
         echo "rclone directory $mount_point is not mounted."
@@ -23,9 +26,10 @@ mount_rclone() {
     local mount_point=$2
     echo "Mounting rclone directory $mount_point..."
     rclone mount "$rclone_remote": "$mount_point" --allow-other --vfs-cache-mode writes --daemon &>/dev/null &
-    if [ $? -eq 0 ]; then
+    sleep 2  # Wait a bit for the mount to initialize
+    if is_mounted "$mount_point"; then
         echo "rclone directory $mount_point mounted successfully."
-        MOUNTED_DIRS+=("$mount_point")  # Add successfully mounted directory to the array
+        MOUNTED_DIRS+=("$mount_point")
     else
         echo "Failed to mount rclone directory $mount_point."
     fi
@@ -46,13 +50,13 @@ unmount_rclone() {
 for i in "${!RCLONE_REMOTES[@]}"; do
     rclone_remote="${RCLONE_REMOTES[$i]}"
     mount_point="${MOUNT_POINTS[$i]}"
-
-    # Check if rclone directory is mounted
-    is_mounted "$mount_point"
-
-    # Mount rclone directory if it's not mounted
-    if [ $? -eq 1 ]; then
+    
+    if ! is_mounted "$mount_point"; then
+        # Attempt to unmount, just in case there's a stale mount
+        fusermount -uz "$mount_point" 2>/dev/null
         mount_rclone "$rclone_remote" "$mount_point"
+    else
+        echo "Skipping mount for $mount_point as it's already mounted."
     fi
 done
 
