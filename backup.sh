@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define arrays for rclone remotes and mount points
-declare -a RCLONE_REMOTES=("fcharris-gdrive" "fcharris-gphotos", "fcharris-dropbox")
-declare -a MOUNT_POINTS=("/home/frank/gdrive" "/home/frank/gphotos", "/home/frank/dropbox")
+declare -a RCLONE_REMOTES=("fcharris-gdrive" "fcharris-gphotos" "fcharris-dropbox")
+declare -a MOUNT_POINTS=("/home/frank/gdrive" "/home/frank/gphotos" "/home/frank/dropbox")
 declare -a MOUNTED_DIRS=()  # Array to store successfully mounted directories
 
 # Function to check if rclone directory is mounted
@@ -28,6 +28,17 @@ mount_rclone() {
         MOUNTED_DIRS+=("$mount_point")  # Add successfully mounted directory to the array
     else
         echo "Failed to mount rclone directory $mount_point."
+    fi
+}
+
+unmount_rclone() {
+    local mount_point=$1
+    echo "Unmounting rclone directory $mount_point..."
+    fusermount -u "$mount_point"
+    if [ $? -eq 0 ]; then
+        echo "rclone directory $mount_point unmounted successfully."
+    else
+        echo "Failed to unmount rclone directory $mount_point."
     fi
 }
 
@@ -68,3 +79,8 @@ fi
 
 # Backup home directory
 kopia snapshot create ~/
+
+# Unmount all mounted directories
+for mounted_dir in "${MOUNTED_DIRS[@]}"; do
+    unmount_rclone "$mounted_dir"
+done
