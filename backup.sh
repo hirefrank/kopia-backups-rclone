@@ -1,8 +1,17 @@
 #!/bin/bash
 
+# Function to get rclone remotes from config file
+get_rclone_remotes() {
+    grep '^\[kopia-.*\]$' ~/.config/rclone/rclone.conf | sed 's/\[//;s/\]//'
+}
+
 # Define arrays for rclone remotes and mount points
-declare -a RCLONE_REMOTES=("fcharris-gdrive" "fcharris-gphotos" "fcharris-dropbox")
-declare -a MOUNT_POINTS=("/home/frank/gdrive" "/home/frank/gphotos" "/home/frank/dropbox")
+mapfile -t RCLONE_REMOTES < <(get_rclone_remotes)
+declare -a MOUNT_POINTS=()
+for remote in "${RCLONE_REMOTES[@]}"; do
+    MOUNT_POINTS+=("/tmp/$remote")
+done
+
 declare -a MOUNTED_DIRS=()  # Array to store successfully mounted directories
 
 # Function to check if rclone directory is mounted
@@ -24,6 +33,8 @@ is_mounted() {
 mount_rclone() {
     local rclone_remote=$1
     local mount_point=$2
+
+    mkdir -p "$mount_point"
     echo "Mounting rclone directory $mount_point..."
     rclone mount "$rclone_remote": "$mount_point" \
         --vfs-cache-mode writes \
@@ -53,6 +64,7 @@ unmount_rclone() {
     fusermount -uz "$mount_point"
     if [ $? -eq 0 ]; then
         echo "rclone directory $mount_point unmounted successfully."
+        rmdir "$mount_point"
     else
         echo "Failed to unmount rclone directory $mount_point."
     fi
@@ -82,17 +94,11 @@ done
 # Create snapshots
 if [ "${#MOUNTED_DIRS[@]}" -gt 0 ]; then
     for mounted_dir in "${MOUNTED_DIRS[@]}"; do
-        if [[ "$mounted_dir" == *"-gphotos" ]]; then
-            dir_with_path="$mounted_dir/media/by-month"
+        echo "Creating snapshot for $mounted_dir..."
+        if ! kopia snapshot create "$mounted_dir"; then
+            echo "WARNING: Failed to create snapshot for $mounted_dir" >&2
         else
-            dir_with_path="$mounted_dir/"
-        fi
-        
-        echo "Creating snapshot for $dir_with_path..."
-        if ! kopia snapshot create "$dir_with_path"; then
-            echo "WARNING: Failed to create snapshot for $dir_with_path" >&2
-        else
-            echo "Snapshot created for $dir_with_path."
+            echo "Snapshot created for $mounted_dir."
         fi
     done
 else
