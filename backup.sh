@@ -11,7 +11,6 @@ declare -a MOUNT_POINTS=()
 for remote in "${RCLONE_REMOTES[@]}"; do
     MOUNT_POINTS+=("/tmp/$remote")
 done
-
 declare -a MOUNTED_DIRS=()  # Array to store successfully mounted directories
 
 # Function to check if rclone directory is mounted
@@ -33,7 +32,6 @@ is_mounted() {
 mount_rclone() {
     local rclone_remote=$1
     local mount_point=$2
-
     mkdir -p "$mount_point"
     echo "Mounting rclone directory $mount_point..."
     rclone mount "$rclone_remote": "$mount_point" \
@@ -41,14 +39,14 @@ mount_rclone() {
         --vfs-cache-poll-interval 0 \
         --volname "$rclone_remote" \
         > "/tmp/rclone_mount_$rclone_remote.log" 2>&1 &
-    
-    local rclone_pid=$!
-    sleep 5  # Give it some time to mount
 
+    local rclone_pid=$!
+    trap "kill $rclone_pid; exit" SIGINT SIGTERM EXIT
+    sleep 5  # Give it some time to mount
     if kill -0 $rclone_pid 2>/dev/null; then
         if grep -qs "$mount_point" /proc/mounts || ls "$mount_point" &>/dev/null; then
             echo "rclone directory $mount_point mounted successfully."
-            MOUNTED_DIRS+=("$mount_point")
+            MOUNTED_DIRS+=("$mount_point")  # Add mount point to the array
         else
             echo "Mount process is running for $mount_point, but the mount point doesn't seem to be working."
         fi
@@ -61,6 +59,10 @@ mount_rclone() {
 unmount_rclone() {
     local mount_point=$1
     echo "Unmounting rclone directory $mount_point..."
+    local rclone_pid=$(pgrep -f "rclone.*$mount_point")
+    if [ -n "$rclone_pid" ]; then
+        kill "$rclone_pid"
+    fi
     fusermount -uz "$mount_point"
     if [ $? -eq 0 ]; then
         echo "rclone directory $mount_point unmounted successfully."
@@ -74,14 +76,13 @@ unmount_rclone() {
 for i in "${!RCLONE_REMOTES[@]}"; do
     rclone_remote="${RCLONE_REMOTES[$i]}"
     mount_point="${MOUNT_POINTS[$i]}"
-    
+
     if ! is_mounted "$mount_point"; then
         # Attempt to unmount, just in case there's a stale mount
         fusermount -uz "$mount_point" 2>/dev/null
         mount_rclone "$rclone_remote" "$mount_point"
     else
         echo "Skipping mount for $mount_point as it's already mounted."
-        MOUNTED_DIRS+=("$mount_point")
     fi
 done
 
@@ -95,7 +96,7 @@ done
 if [ "${#MOUNTED_DIRS[@]}" -gt 0 ]; then
     for mounted_dir in "${MOUNTED_DIRS[@]}"; do
         echo "Creating snapshot for $mounted_dir..."
-        if ! kopia snapshot create "$mounted_dir"; then
+        if ! kopia snapshot create "$mounted_dir"/*; then
             echo "WARNING: Failed to create snapshot for $mounted_dir" >&2
         else
             echo "Snapshot created for $mounted_dir."
@@ -119,5 +120,4 @@ for mounted_dir in "${MOUNTED_DIRS[@]}"; do
     unmount_rclone "$mounted_dir"
 done
 echo "All directories unmounted."
-
 echo "Backup process completed."
